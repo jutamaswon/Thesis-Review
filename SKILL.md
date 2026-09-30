@@ -9,13 +9,11 @@ description: >-
   review", "review my manuscript", "peer review this paper", "review this
   paper before journal submission", or when they point at an academic
   .pdf/.docx and ask for feedback. Detects the document type first — thesis
-  (then which of the two standard Thai-DBA formats: Proposal-only Ch1–3, or
-  the 3-paper-collection with Ch1 = umbrella proposal + Ch2–4 as standalone
-  essays each carrying its own internal structure) or journal manuscript
-  (IMRaD) — then runs the matching fixed 8-step review (structure, title,
-  abstract, per-section body, bibliography), producing a structured Markdown
-  report plus a matching .docx; for Word (.docx) inputs it additionally
-  applies the text-level corrections directly in the document as real Word
+  (either Thai-DBA format: Proposal-only Ch1–3, or the 3-paper-collection)
+  or journal manuscript (IMRaD) — then runs the matching fixed 8-step review
+  (structure, title, abstract, per-section body, bibliography), producing a
+  structured Markdown report plus a matching .docx; for Word inputs it
+  additionally applies the text-level corrections directly as real Word
   track changes. Not for short essays or non-academic documents.
 ---
 
