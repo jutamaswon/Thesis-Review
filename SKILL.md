@@ -14,7 +14,9 @@ description: >-
   essays each carrying its own internal structure) or journal manuscript
   (IMRaD) — then runs the matching fixed 8-step review (structure, title,
   abstract, per-section body, bibliography), producing a structured Markdown
-  report plus a matching .docx. Not for short essays or non-academic documents.
+  report plus a matching .docx; for Word (.docx) inputs it additionally
+  applies the text-level corrections directly in the document as real Word
+  track changes. Not for short essays or non-academic documents.
 ---
 
 # Academic Review — Thesis & Manuscript
@@ -311,6 +313,8 @@ abstract → Thai or bilingual as appropriate; English documents → English).
   **`docx`** skill is preferred; if unavailable, a Markdown→DOCX converter
   (pandoc, or python-docx) is acceptable. Deliver **both** files and report both
   paths to the user.
+- If the input was a `.docx`, there is a **third deliverable** — the revised
+  document with track changes; see Stage 6.
 - **The `.docx` must be a professional, academic, official document** — the kind
   a committee would expect:
   - A formal **title block** at the top (report title, thesis or manuscript
@@ -324,6 +328,66 @@ abstract → Thai or bilingual as appropriate; English documents → English).
     or number — no raw Markdown pipe syntax.
   - Margins and spacing that look typeset, not pasted. If generating via a
     converter, post-process to enforce these; never ship a Markdown-dump.
+
+## Stage 6 — Track-changes revision (DOCX input only)
+
+When — and only when — the input is a Word `.docx`, deliver a **third
+artifact**: the document itself with corrections applied as **real Word
+tracked changes**, so the author or supervisor can Accept/Reject each one in
+Word (Review → Track Changes view).
+
+**Collect edits while you review (Stage 3/3b).** Every correction that is a
+*mechanical, verifiable text fix* — wording, Thai usage, phrasing,
+punctuation, typo repair, citation-format fixes — and whose exact original
+text you can quote, becomes an entry in `./_thesis_work/edits.json`:
+
+```json
+{
+  "author": "AI Reviewer (<model name>)",
+  "edits": [
+    {"action": "replace", "find": "หลักฐานเชิงประจักษ์", "replace": "หลักการเชิงประจักษ์"},
+    {"action": "replace", "find": "teh ", "replace": "the ", "count": "all"},
+    {"action": "delete", "find": " ซึ่งกล่าวซ้ำแล้วซ้ำอีก"},
+    {"action": "insert_after", "find": "ผลการศึกษาแสดงในตารางที่ 1", "text": ""}
+  ]
+}
+```
+
+Rules:
+
+- Quote the `"find"` text **exactly as it appears in the document** — copy it
+  from the extracted text you are reading, never from memory.
+- **Text-level fixes only.** Never restructure: no moving sections, no
+  renumbering chapters, no wholesale paragraph rewrites, no table surgery.
+  Structural, academic, and methodological recommendations belong in the
+  report; only the surgical fixes go into the document.
+- One recurring error → either one edit per occurrence (preferred: each gets
+  its own revision mark at the right spot) or a single edit with
+  `"count": "all"`.
+- One `edits.json` per document; keep every entry traceable to a row of the
+  Corrections Log (same wording for the issue).
+
+**Then run the bundled script** (stdlib-only, no dependencies):
+
+```bash
+python "<skill_dir>/scripts/revise_docx.py" <input>.docx \
+    ./_thesis_work/edits.json \
+    ./reviews/<document-name>-revised-tracked.docx
+```
+
+Read its JSON summary. For every skipped edit, re-check the quoted text
+against the document and retry once with the corrected quote; drop edits
+that still miss and note them in the report. When it succeeds, deliver
+**three files** and report all paths:
+
+1. `./reviews/<document-name>-review.md` — the report (Markdown)
+2. `./reviews/<document-name>-review.docx` — the report (Word)
+3. `./reviews/<document-name>-revised-tracked.docx` — the revised paper with
+   tracked changes (open in Word → Review tab → accept/reject each change)
+
+For **PDF input this stage is impossible** (track changes need a Word file) —
+skip it silently but say so in one line at the end of the report: revisions
+were reported only, not applied.
 
 ## Cleanup
 
@@ -342,7 +406,8 @@ Thesis-Review/
 │   └── report-template-manuscript.md  # manuscript report skeleton + recommendation
 ├── scripts/
 │   ├── segment.py            # bilingual splitter: thesis chapters OR manuscript IMRaD
-│   └── page_map.py           # map full_text.txt lines -> PDF page numbers
+│   ├── page_map.py           # map full_text.txt lines -> PDF page numbers
+│   └── revise_docx.py        # apply edits.json to a .docx as real Word track changes
 ├── reviews/                  # OUTPUT — generated <name>-review.md + .docx land here
 └── manuscripts/ or theses/   # INPUT  — drop the document .pdf/.docx here
 ```
