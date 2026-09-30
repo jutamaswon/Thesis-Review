@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Split an extracted thesis text file into front matter, abstracts, Ch1-5, and
-references. Standard library only.
+"""Split an extracted academic text file into reviewable sections.
+Standard library only. Handles two document types:
+
+- Thesis: front matter, abstracts, Ch1-5, references (+ per-chapter X.1-X.5
+  sub-section map for essay-part completeness).
+- Journal manuscript: when no thesis chapter markers are found (fewer than
+  2 chapters), the document is re-segmented by its IMRaD headings
+  (Introduction, Literature Review, Methodology, Results, Discussion,
+  Conclusion, Appendix) and reported as document_type "manuscript".
 
 Usage:
     python segment.py <full_text.txt> <output_dir>
@@ -12,10 +19,11 @@ skips everything between a "สารบัญ"/"Table of Contents" marker and t
 short bare chapter heading, and (2) per-line dot-leader / trailing-page-number
 filters for TOC entries that live outside that region.
 
-The JSON map also records, for each chapter, the internal `X.1`-`X.5`
-sub-section markers found inside it (e.g. `2.1 บทนำ`, `3.4 ผลการศึกษา`).
-This lets callers (the skill's Stage 2b format detector) tell a complete
-3-paper-collection essay from one truncated mid-way.
+The JSON map records `document_type` ("thesis" | "manuscript" | "unknown") so
+the skill's Stage 2b detector can pick the right rubric, and for theses it
+records, per chapter, the internal `X.1`-`X.5` sub-section markers (e.g.
+`2.1 บทนำ`, `3.4 ผลการศึกษา`) to tell a complete 3-paper-collection essay
+from one truncated mid-way.
 """
 import json
 import re
@@ -49,6 +57,30 @@ ESSAY_PARTS = {
     "appendix":       ["ภาคผนวก", "appendix", " annex", "questionnaire", "แบบสอบถาม"],
 }
 
+# Journal-manuscript (IMRaD) heading patterns, bilingual, matched against a
+# whole short line with optional leading numbering ("1. Introduction",
+# "3.2 Results", "II. Methodology"). Used only when no thesis chapter
+# structure is detected.
+MS_HEADING_PARTS = [
+    ("introduction", r"introduction|background(?:\s+(?:and|&)\s+(?:rationale|significance))?|บทนำ|ความเป็นมาและความสำคัญของปัญหา"),
+    ("literature",   r"(?:literature|research|researches|studies|works?)\s+(?:review|related)|review\s+of\s+(?:the\s+)?literature|literature\s+review|theoretical\s+framework|conceptual\s+framework|related\s+(?:works?|studies|research|literature)|ทบทวนวรรณกรรม|การทบทวนวรรณกรรม|เอกสารและงานวิจัยที่เกี่ยวข้อง|งานวิจัยที่เกี่ยวข้อง|กรอบแนวคิด|กรอบทฤษฎี|ทฤษฎีและงานวิจัยที่เกี่ยวข้อง|แนวคิดทฤษฎีและงานวิจัยที่เกี่ยวข้อง"),
+    ("methodology",  r"method(?:s|ology|ologies|ological\s+approach)?|research\s+(?:methodology|methods?|design|approach)|materials?\s+and\s+methods?|data\s+and\s+(?:methods?|sample)|ระเบียบวิธีวิจัย|ระเบียบวิธีทางวิทยาศาสตร์|วิธีการวิจัย|วิธีดำเนินการวิจัย|วิธีทำการวิจัย|วิธีการศึกษา|การออกแบบการวิจัย|ระเบียบวิธีดำเนินการวิจัย"),
+    ("results",      r"results?(?:\s+(?:and|&)\s+(?:analysis|findings?))?|findings?|empirical\s+results?|ผลการวิจัย|ผลการศึกษา|ผลการวิเคราะห์(?:\s*ข้อมูล)?|ผลการทดสอบ(?:\s*สมมติฐาน)?|การวิเคราะห์ข้อมูล"),
+    ("discussion",   r"discussions?(?:\s+(?:and|&)\s+(?:implications?|conclusions?|recommendations?))?|อภิปรายผล|การอภิปรายผล|อภิปรายการวิจัย|อภิปรายผลการวิจัย"),
+    ("conclusion",   r"conclusions?(?:\s+(?:and|&)\s+(?:recommendations?|implications?|suggestions?|future\s+research))?|summary(?:\s+(?:and|&)\s+(?:conclusions?|findings?))?|สรุปผลการวิจัย|สรุปและข้อเสนอแนะ|สรุป|ข้อเสนอแนะ"),
+    ("appendix",     r"append(?:ix|ices)|ภาคผนวก"),
+]
+MS_NUM = r"(?:\d{1,2}(?:\.\d{1,2})?[.)]\s*|[IVXivx]{1,4}[.)]\s*)?"
+MS_TITLES = {
+    "introduction": "Introduction",
+    "literature": "Literature Review / Framework",
+    "methodology": "Methodology",
+    "results": "Results",
+    "discussion": "Discussion",
+    "conclusion": "Conclusion",
+    "appendix": "Appendix",
+}
+
 
 def classify_essay_part(line: str, ch_num: int):
     """Given a heading line like '2.4 ผลการศึกษา', return the canonical part name
@@ -77,6 +109,20 @@ def classify_essay_part(line: str, ch_num: int):
     pos_map = {1: "introduction", 2: "literature", 3: "methodology",
                4: "results", 5: "discussion"}
     return pos_map.get(sub)
+
+
+def manuscript_part(line: str):
+    """Classify a standalone IMRaD heading line (Thai or English, optionally
+    numbered '1.' / '3.2' / 'II.') to its canonical manuscript part, or None.
+    Only short, non-TOC lines qualify — body sentences never full-match."""
+    s = line.strip()
+    if not s or len(s) > 60 or is_toc_line(s):
+        return None
+    low = s.lower()
+    for part, pat in MS_HEADING_PARTS:
+        if re.fullmatch(MS_NUM + pat + r"\s*:?", low):
+            return part
+    return None
 
 
 def to_arabic(token: str):
@@ -247,6 +293,44 @@ def main():
 
     markers.sort(key=lambda m: m[0])
 
+    # --- Pass 1b: manuscript (IMRaD) fallback. A journal manuscript carries no
+    # thesis chapter markers — at most a lone bare "บทนำ"/"Introduction" that
+    # classify() mistook for Chapter 1. If fewer than 2 chapters were found,
+    # re-segment by IMRaD headings instead and mark the document a manuscript.
+    document_type = "unknown"
+    n_chapters = sum(1 for _, lab, _ in markers if lab.startswith("chapter_"))
+    if n_chapters >= 2:
+        document_type = "thesis"
+    else:
+        ms_markers = []
+        ms_seen = set()
+        in_toc = False
+        for i, line in enumerate(lines):
+            s = line.strip()
+            if TOC_START_RE.match(s):
+                in_toc = True
+                continue
+            if in_toc:
+                if is_bare_chapter_heading(s):
+                    in_toc = False
+                else:
+                    continue
+            hit = classify(line)
+            if hit and hit[0] in ("abstract_th", "abstract_en", "references"):
+                label, title = hit[0], LABELS[hit[0]]
+            else:
+                part = manuscript_part(s)
+                if not part:
+                    continue
+                label, title = f"ms_{part}", MS_TITLES[part]
+            if label in ms_seen:
+                continue
+            ms_seen.add(label)
+            ms_markers.append((i, label, title))
+        if sum(1 for _, lab, _ in ms_markers if lab.startswith("ms_")) >= 3:
+            document_type = "manuscript"
+            markers = sorted(ms_markers, key=lambda m: m[0])
+
     # --- Pass 2: assign boundaries; everything before the first marker is front matter.
     boundaries = []
     if not markers or markers[0][0] > 0:
@@ -301,21 +385,30 @@ def main():
         sections.append(entry)
 
     found = {s["label"] for s in sections}
-    expected = ["abstract_th", "abstract_en",
-                "chapter_1", "chapter_2", "chapter_3", "chapter_4", "chapter_5",
-                "references"]
+    if document_type == "manuscript":
+        expected = ["abstract_en", "ms_introduction", "ms_literature",
+                    "ms_methodology", "ms_results", "ms_discussion",
+                    "ms_conclusion", "references"]
+    else:
+        expected = ["abstract_th", "abstract_en",
+                    "chapter_1", "chapter_2", "chapter_3", "chapter_4",
+                    "chapter_5", "references"]
     missing = [e for e in expected if e not in found]
 
     report = {
         "source": str(src),
+        "document_type": document_type,
         "sections": sections,
         "missing": missing,
         "note": ("Boundaries located with a TOC-region guard; subsection markers "
-                 "are informational and help detect the thesis format."),
+                 "are informational and help detect the thesis format. "
+                 "document_type picks the rubric: thesis (chapter structure, "
+                 "Format A/B) vs manuscript (IMRaD)."),
     }
     (out / "segmentation.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    print(f"Document type: {document_type}")
     print(f"Wrote {len(sections)} sections to {out}")
     for s in sections:
         extra = ""

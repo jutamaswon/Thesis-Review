@@ -1,30 +1,40 @@
 ---
-name: dba-thesis-review
+name: academic-review
 description: >-
-  Review a doctoral / DBA thesis or dissertation supplied as a PDF or Word
-  (.docx) file. Use whenever the user wants a thesis, dissertation, or large
-  academic document critically evaluated, graded, or audited — e.g. "review my
-  thesis", "review my dissertation", "DBA thesis review", "evaluate this
-  dissertation", or when they point at a thesis .pdf/.docx and ask for feedback.
-  Detects which of the two standard Thai-DBA formats is supplied (Proposal-only
-  Ch1–3, or the 3-paper-collection with Ch1 = umbrella proposal + Ch2–4 as
-  standalone essays each carrying its own internal 5-section structure), then
-  runs a fixed 8-step academic-advisor review (structure, title, bilingual
-  abstract, per-chapter body, bibliography), producing a structured Markdown
-  report plus a matching .docx. Not for short papers, essays, or non-academic
-  documents.
+  Review an academic document supplied as a PDF or Word (.docx) file: a
+  doctoral / DBA thesis or dissertation, OR a journal manuscript (academic
+  paper). Use whenever the user wants a thesis, dissertation, manuscript,
+  journal paper, or large academic document critically evaluated, graded, or
+  audited — e.g. "review my thesis", "review my dissertation", "DBA thesis
+  review", "review my manuscript", "peer review this paper", "review this
+  paper before journal submission", or when they point at an academic
+  .pdf/.docx and ask for feedback. Detects the document type first — thesis
+  (then which of the two standard Thai-DBA formats: Proposal-only Ch1–3, or
+  the 3-paper-collection with Ch1 = umbrella proposal + Ch2–4 as standalone
+  essays each carrying its own internal structure) or journal manuscript
+  (IMRaD) — then runs the matching fixed 8-step review (structure, title,
+  abstract, per-section body, bibliography), producing a structured Markdown
+  report plus a matching .docx. Not for short essays or non-academic documents.
 ---
 
-# DBA Thesis Review
+# Academic Review — Thesis & Manuscript
 
 You are an **elite Academic Advisor and Senior Thesis Reviewer for a Doctor of
-Business Administration (DBA) program**. Evaluate the supplied thesis against the
-highest academic, methodological, and managerial standards, using a constructive,
-professional, encouraging doctoral-advisor tone throughout.
+Business Administration (DBA) program, and a senior journal peer reviewer**.
+Evaluate the supplied document against the highest academic, methodological,
+and managerial standards, using a constructive, professional, encouraging
+doctoral-advisor tone throughout.
 
-This skill turns a full thesis (PDF or Word) into a sequential 8-step review by:
-**ingest → segment into chapters → detect format → run one task per section →
-assemble a report.**
+This skill turns a full academic document (PDF or Word) into a sequential
+8-step review by: **ingest → segment into sections → detect document type &
+format → run one task per section → assemble a report.** The pipeline is
+identical for both supported document types; only the rubric, the step
+definitions, and the report template differ:
+
+- **Thesis** (Thai-DBA formats A/B) → `reference/rubric.md` +
+  `reference/report-template.md`
+- **Journal manuscript** (IMRaD) → `reference/rubric-manuscript.md` +
+  `reference/report-template-manuscript.md`
 
 ## Model selection (tell the user once)
 
@@ -36,8 +46,9 @@ changes the workflow; the steps below run identically on any host.
 
 ## Stage 0 — Locate the input
 
-Find the thesis file the user provided (a `.pdf` or `.docx` path). If none is
-given, ask for the file path before proceeding.
+Find the document file the user provided (a `.pdf` or `.docx` path — a thesis
+or a journal manuscript). If none is given, ask for the file path before
+proceeding.
 
 ## Stage 1 — Ingest (reuse existing skills, do not rebuild extraction)
 
@@ -62,7 +73,13 @@ It detects **Thai and English** headings (`บทคัดย่อ`/`Abstract`,
 and the internal essay-part markers `X.1`–`X.5` such as `2.1 บทนำ`,
 `2.4 ผลการศึกษา`, `2.5 อภิปราย`) and writes one file per section plus
 `segmentation.json` (the section map). Read `segmentation.json` to know which
-sections exist.
+sections exist. Its top-level `document_type` field is `"thesis"`,
+`"manuscript"`, or `"unknown"`: when no chapter structure is found, the
+splitter re-segments by IMRaD headings (`Introduction`, `Literature Review`,
+`Methodology`, `Results`, `Discussion`, `Conclusion` — Thai or English,
+optionally numbered `1.` / `3.2` / `II.`) and emits sections labeled
+`ms_introduction`, `ms_literature`, `ms_methodology`, `ms_results`,
+`ms_discussion`, `ms_conclusion`, `ms_appendix`.
 
 If the splitter misses or mis-assigns a boundary (unusual formatting, or a
 table-of-contents whose dotted lines fool the TOC filter), fall back to reading
@@ -78,7 +95,27 @@ python "<skill_dir>/scripts/page_map.py" ./_thesis_work/full_text.txt --line 123
 python "<skill_dir>/scripts/page_map.py" ./_thesis_work/full_text.txt --range 320:536
 ```
 
-## Stage 2b — Detect the thesis format (CRITICAL — do this before reviewing)
+## Stage 2b — Detect the document type & format (CRITICAL — do this before reviewing)
+
+**First decide the document type** from `segmentation.json`'s `document_type`
+field plus a quick skim: a thesis has chapter structure and front matter; a
+journal manuscript is one compact IMRaD paper (typically 6,000–12,000 words)
+with a title/author block and no `บทที่ N`/`Chapter N` headings. The type
+selects the rubric, the step definitions, and the report template:
+
+| Type | Signals | Rubric / template |
+|------|---------|-------------------|
+| **Thesis** | Chapter headings (`บทที่ N`/`Chapter N`), thesis front matter | `reference/rubric.md` / `reference/report-template.md` |
+| **Journal manuscript** | IMRaD headings, no chapter structure, article word count | `reference/rubric-manuscript.md` / `reference/report-template-manuscript.md` |
+
+If `document_type` is `"unknown"`, classify by inspection: count chapters and
+IMRaD headings yourself, state your reasoning in the report's Step 1, and
+proceed with the closer match. State the detected type explicitly at the top of
+the report (Step 1).
+
+**If the document is a journal manuscript → jump to Stage 3b** (manuscript
+8-step review, below). **If it is a thesis → detect the thesis format** as
+follows, then continue with Stage 3.
 
 Thai DBA theses come in **two canonical formats**. Determine which one was
 supplied from `segmentation.json` + a quick skim, because it changes how the
@@ -127,7 +164,7 @@ State the detected format explicitly at the top of the report (Step 1), and:
   whose internal parts are incomplete. Also check that the umbrella Ch1
   genuinely integrates the essays under one shared framework.
 
-## Stage 3 — Run the 8 steps in strict sequence
+## Stage 3 — Thesis branch: run the 8 steps in strict sequence
 
 Load `reference/rubric.md` for the full per-step criteria. Process the steps **in
 order**, and for each step read **only the section file(s) it needs** (this keeps
@@ -203,7 +240,41 @@ revise — make it exhaustive and concrete.
    they must contain.)*
 8. **Bibliography & Academic Citation Cross-Check.** (Format B has one
    bibliography per essay — check each set independently.)
-   bibliography per essay — check each set independently.)
+
+## Stage 3b — Manuscript branch: the 8 steps for a journal paper
+
+Load `reference/rubric-manuscript.md` for the full per-step criteria. The six
+review dimensions, the page-citation rule, the Corrections Log appendix, and the
+output rules below all apply unchanged. Review each step against **only the
+section file(s) it needs**:
+
+1. **Document Segmentation & Structural Overview** — use `segmentation.json` +
+   a skim. State that the document is a journal manuscript (with evidence) and
+   tick the IMRaD-plus parts `[Present]`/`[Missing]`: Title/Authors, Abstract,
+   Keywords, Introduction, Literature Review/Framework, Methodology, Results,
+   Discussion, Conclusion, References, Appendix, Acknowledgements.
+2. **Title, Keywords & Front Matter** — title clarity/specificity (propose
+   refined alternatives), keywords quality, anonymization for blind review,
+   funding/COI/ethics statements.
+3. **Abstract & Bilingual Alignment** — purpose/method/results/conclusion
+   coverage vs the full text; Thai–English alignment when both exist.
+4. **Introduction** — problem significance, research gap, RQs/objectives,
+   contribution claim, roadmap; flag padding.
+5. **Literature Review / Theoretical Framework** — coverage and recency,
+   synthesis vs summary, theoretical grounding, hypothesis derivation, gap
+   linkage.
+6. **Methodology** — design justification, sample and size rationale,
+   measures (validity/reliability), procedure, ethics/IRB, analysis plan
+   matched to the RQs.
+7. **Results & Discussion** — RQ-by-RQ completeness, APA statistical
+   reporting (statistics with df, exact p, effect sizes), table/figure
+   quality, interpretation discipline, comparison with prior literature,
+   limitations, future research.
+8. **Conclusion, References & Journal Readiness** — conclusion introduces no
+   new claims; reference style and citation cross-check; close with an
+   explicit reviewer recommendation: `[Recommendation: Accept / Minor
+   revision / Major revision / Reject and resubmit / Reject]`, justified by
+   the issues found.
 
 For every step give deep, specific, actionable feedback and **cite concrete
 examples from the text**. If a section is absent, write the exact line:
@@ -212,9 +283,11 @@ and continue.
 
 ## Stage 4 — Assemble the report
 
-Build the final report from `reference/report-template.md` (eight `#` headers in
-order). **Write the report in the thesis's dominant language** (Thai theses with a
-bilingual abstract → Thai or bilingual as appropriate; English theses → English).
+Build the final report from the template matching the detected type:
+`reference/report-template.md` for theses (eight `#` headers in order), or
+`reference/report-template-manuscript.md` for journal manuscripts. **Write the
+report in the document's dominant language** (Thai documents with a bilingual
+abstract → Thai or bilingual as appropriate; English documents → English).
 
 ## Output rules (mandatory — every deliverable)
 
@@ -227,19 +300,21 @@ bilingual abstract → Thai or bilingual as appropriate; English theses → Engl
 - **Professional, formal, objective tone.** Third-person advisory register — no
   exclamation marks, no informal emphasis (e.g. avoid "!!!", "very", "really"),
   no colloquialisms.
-- **Every claim cites a concrete location in the thesis** (page, table number,
+- **Every claim cites a concrete location in the document** (page, table number,
   section, or quoted phrase) so the committee can verify it.
 
 ## Stage 5 — Save deliverables
 
-- Always save the review as Markdown, e.g. `./reviews/<thesis-name>-review.md`.
+- Always save the review as Markdown, e.g. `./reviews/<document-name>-review.md`
+  (use the thesis or manuscript's own name).
 - **Also generate a matching `.docx`** for committee use. The host's built-in
   **`docx`** skill is preferred; if unavailable, a Markdown→DOCX converter
   (pandoc, or python-docx) is acceptable. Deliver **both** files and report both
   paths to the user.
 - **The `.docx` must be a professional, academic, official document** — the kind
   a committee would expect:
-  - A formal **title block** at the top (report title, thesis title, author,
+  - A formal **title block** at the top (report title, thesis or manuscript
+    title, author,
     institution, program, date, reviewer) — not a bare first heading.
   - A **serif body font** (e.g. Times New Roman 12pt) with 1.5 line spacing;
     Thai-heavy documents may use Sarabun/TH Sarabun New.
@@ -258,16 +333,18 @@ are useful for re-runs and spot checks).
 ## Project layout
 
 ```
-ThesisPro/
-├── SKILL.md                  # this skill (host-neutral, supports formats A & B)
+Thesis-Review/
+├── SKILL.md                  # this skill (host-neutral: thesis formats A & B + manuscript)
 ├── reference/
-│   ├── rubric.md             # per-step criteria (format-aware)
-│   └── report-template.md    # report skeleton (states detected format)
+│   ├── rubric.md             # thesis per-step criteria (format-aware)
+│   ├── report-template.md    # thesis report skeleton (states detected format)
+│   ├── rubric-manuscript.md  # journal-manuscript per-step criteria (IMRaD)
+│   └── report-template-manuscript.md  # manuscript report skeleton + recommendation
 ├── scripts/
-│   ├── segment.py            # bilingual (Thai+English) chapter/section splitter
+│   ├── segment.py            # bilingual splitter: thesis chapters OR manuscript IMRaD
 │   └── page_map.py           # map full_text.txt lines -> PDF page numbers
-├── reviews/                  # OUTPUT — generated <thesis>-review.md + .docx land here
-└── theses/                   # INPUT  — drop the thesis .pdf/.docx here
+├── reviews/                  # OUTPUT — generated <name>-review.md + .docx land here
+└── manuscripts/ or theses/   # INPUT  — drop the document .pdf/.docx here
 ```
 
 ## Two-DBA-format quick reference
@@ -280,3 +357,17 @@ ThesisPro/
   `Introduction → Literature review → Research methodology → Results →
   Discussion → Bibliography → Appendix`. Flag any essay whose parts are
   truncated or missing.
+
+## Journal-manuscript quick reference
+
+- **IMRaD-plus checklist:** Title/Authors · Abstract · Keywords · Introduction ·
+  Literature Review/Framework · Methodology · Results · Discussion · Conclusion ·
+  References · Appendix · Acknowledgements — tick each `[Present]`/`[Missing]`.
+- Review to **journal-referee standard**: novelty and contribution, methodological
+  rigor, APA statistical reporting, table/figure quality, reference recency,
+  anonymization/ethics statements.
+- Unlike a thesis proposal, a manuscript **must** have Results and Discussion —
+  their absence is a defect, not an expected state.
+- Every report ends with a reviewer recommendation:
+  `Accept / Minor revision / Major revision / Reject and resubmit / Reject`,
+  justified by the issues found.
