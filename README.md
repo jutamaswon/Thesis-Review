@@ -71,7 +71,8 @@ Thesis-Review/
 │   ├── rubric.md              # เกณฑ์การตรวจวิทยานิพนธ์ รายขั้นตอน (8 ขั้น)
 │   ├── report-template.md     # โครงร่างรายงานรีวิววิทยานิพนธ์
 │   ├── rubric-manuscript.md   # เกณฑ์การตรวจบทความวิชาการ (IMRaD, 8 ขั้น)
-│   └── report-template-manuscript.md  # โครงร่างรายงานรีวิวบทความ + ข้อเสนอแนะ
+│   ├── report-template-manuscript.md  # โครงร่างรายงานรีวิวบทความ + ข้อเสนอแนะ
+│   └── committee-reference.docx  # เทมเพลตสไตล์ Word ระดับกรรมการ สำหรับ pandoc
 └── scripts/
     ├── segment.py             # สคริปต์แยกบท/หัวข้อ (วิทยานิพนธ์ + manuscript, ไทย+อังกฤษ)
     ├── page_map.py            # สคริปต์แปลงเลขบรรทัดเป็นเลขหน้า PDF
@@ -86,6 +87,10 @@ Thesis-Review/
   (หากใช้ **ChatGPT** ซึ่งไม่มีระบบสกิลแบบโฟลเดอร์ ดูวิธีใช้แบบ "ชุดคำสั่ง + ไฟล์อ้างอิง"
   ในหัวข้อ [ใช้กับ ChatGPT](#ใช้กับ-chatgpt-เว็บ-chatgptcom) ด้านล่าง)
 - **Python 3.8 ขึ้นไป** (สคริปต์ใช้เฉพาะไลบรารีมาตรฐาน ไม่ต้องติดตั้งแพ็กเกจเพิ่ม)
+- **pandoc 3.x (แนะนำ)** — ใช้แปลงรายงาน `.md` เป็น `.docx` ระดับเอกสารทางการด้วยเทมเพลต
+  `reference/committee-reference.docx` (ติดตั้ง: `winget install JohnMacFarlane.Pandoc`
+  บน Windows / `brew install pandoc` บน macOS) — หากไม่มี pandoc สกิลจะใช้
+  เครื่องมือสร้างเอกสารในตัวของ AI agent แทน
 - แนะนำให้เลือกโมเดลระดับ **deep/reasoning** สำหรับการรีวิวเต็มรูปแบบ
   (เลือกโมเดลได้ในตัว AI agent เอง เช่น `/model` — สกิลนี้ไม่ต้องตั้งค่าคีย์ใด ๆ)
 

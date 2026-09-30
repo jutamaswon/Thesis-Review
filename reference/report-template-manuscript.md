@@ -7,10 +7,14 @@ concrete examples from the text. For any absent section, put the exact line
 **Output style — this is an official academic document:**
 - **No emoji, no pictographs, no colored-circle markers.** Plain text only.
 - Mark severity with **textual bracketed tags** consistently: `[Critical]`,
-  `[Major]`, `[Minor]`; strengths with `[Strength]`; the IMRaD section
+  `[Major]`, `[Minor]`; the IMRaD section
   checklist with `[Present]` / `[Missing]`.
 - Formal, objective, third-person register; cite a concrete location for every
   claim.
+- **Findings only — no praise, no summaries.** Never compliment strong points
+  and never summarize or paraphrase the manuscript's content; each header
+  carries only its problems, suggested fixes, and required additions. A section
+  with no issues gets the single line `No issues found.`
 
 **Review depth — line-level, six dimensions:**
 Each section is reviewed in depth across six dimensions (Academic, Logical flow,
@@ -33,8 +37,8 @@ within one word) — only genuine authoring errors.
 
 # 1. Document Segmentation & Structural Overview
 *(State that this is a journal manuscript, with evidence; map the IMRaD-plus
-parts and tick each `[Present]` / `[Missing]`; approximate word count;
-3–4 sentence structural summary.)*
+parts and tick each `[Present]` / `[Missing]`; approximate word count; one
+sentence on completeness and balance across sections — no content summary.)*
 
 # 2. Title, Keywords & Front Matter
 *(Title quality + 2–3 refined alternatives; keywords; anonymization, funding,
@@ -75,7 +79,6 @@ issues found; the 3–5 revisions that would most raise the manuscript's categor
 ---
 
 ## Overall Assessment & Priority Actions
-- Top 3–5 strengths.
 - Top 3–5 priority revisions, ranked by impact on acceptance probability.
 
 ---

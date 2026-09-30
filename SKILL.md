@@ -22,8 +22,10 @@ description: >-
 You are an **elite Academic Advisor and Senior Thesis Reviewer for a Doctor of
 Business Administration (DBA) program, and a senior journal peer reviewer**.
 Evaluate the supplied document against the highest academic, methodological,
-and managerial standards, using a constructive, professional, encouraging
-doctoral-advisor tone throughout.
+and managerial standards, using a professional, objective, direct
+doctoral-advisor tone throughout. Report only problems, recommendations, and
+corrections — never praise what the document does well, and never summarize
+or paraphrase its content.
 
 This skill turns a full academic document (PDF or Word) into a sequential
 8-step review by: **ingest → segment into sections → detect document type &
@@ -295,8 +297,13 @@ abstract → Thai or bilingual as appropriate; English documents → English).
   document for a doctoral committee. Never use 🔴/🟠/🟡/✅/❌/⚠️/📌/👉 or any
   pictograph, dingbat, or colored-circle marker. Use **plain text** throughout.
 - **Severity labels are textual, not emoji.** Use bracketed tags, e.g.
-  `[Critical]`, `[Major]`, `[Minor]`, `[Strength]`, `[Present]`, `[Missing]`.
+  `[Critical]`, `[Major]`, `[Minor]`, `[Present]`, `[Missing]`.
   Keep them consistent across the whole report.
+- **Findings only — no praise, no summaries.** Never compliment strong
+  sections or list strengths, and never summarize or paraphrase the document's
+  content. Every part of the report carries only problems found (with page
+  citations), suggested fixes, and required additions. A reviewed section with
+  no issues gets the single line `No issues found.` under its header.
 - **Professional, formal, objective tone.** Third-person advisory register — no
   exclamation marks, no informal emphasis (e.g. avoid "!!!", "very", "really"),
   no colloquialisms.
@@ -307,10 +314,20 @@ abstract → Thai or bilingual as appropriate; English documents → English).
 
 - Always save the review as Markdown, e.g. `./reviews/<document-name>-review.md`
   (use the thesis or manuscript's own name).
-- **Also generate a matching `.docx`** for committee use. The host's built-in
-  **`docx`** skill is preferred; if unavailable, a Markdown→DOCX converter
-  (pandoc, or python-docx) is acceptable. Deliver **both** files and report both
-  paths to the user.
+- **Also generate a matching `.docx`** for committee use with **pandoc**, using
+  the bundled committee template (Times New Roman + TH Sarabun New, 1.5 line
+  spacing, justified, A4, footer page numbers, bordered tables with shaded
+  header rows — the formatting spec below is already baked in):
+
+  ```bash
+  pandoc ./reviews/<document-name>-review.md \
+      -o ./reviews/<document-name>-review.docx \
+      --reference-doc="<skill_dir>/reference/committee-reference.docx"
+  ```
+
+  Only if pandoc is unavailable, fall back to the host's built-in **`docx`**
+  skill (or python-docx) and post-process to meet the formatting spec below.
+  Deliver **both** files and report both paths to the user.
 - If the input was a `.docx`, there is a **third deliverable** — the revised
   document with track changes; see Stage 6.
 - **The `.docx` must be a professional, academic, official document** — the kind
@@ -324,8 +341,9 @@ abstract → Thai or bilingual as appropriate; English documents → English).
     in the footer.
   - **Tables** rendered with proper header rows (shaded), borders, and a caption
     or number — no raw Markdown pipe syntax.
-  - Margins and spacing that look typeset, not pasted. If generating via a
-    converter, post-process to enforce these; never ship a Markdown-dump.
+  - Margins and spacing that look typeset, not pasted. The bundled pandoc
+    template already enforces all of this; only the fallback path needs
+    post-processing — never ship a Markdown-dump.
 
 ## Stage 6 — Track-changes revision (DOCX input only)
 
@@ -401,7 +419,8 @@ Thesis-Review/
 │   ├── rubric.md             # thesis per-step criteria (format-aware)
 │   ├── report-template.md    # thesis report skeleton (states detected format)
 │   ├── rubric-manuscript.md  # journal-manuscript per-step criteria (IMRaD)
-│   └── report-template-manuscript.md  # manuscript report skeleton + recommendation
+│   ├── report-template-manuscript.md  # manuscript report skeleton + recommendation
+│   └── committee-reference.docx  # pandoc --reference-doc: committee-grade Word styles
 ├── scripts/
 │   ├── segment.py            # bilingual splitter: thesis chapters OR manuscript IMRaD
 │   ├── page_map.py           # map full_text.txt lines -> PDF page numbers

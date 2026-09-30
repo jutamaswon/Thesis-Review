@@ -7,10 +7,14 @@ examples from the text. For any absent section, put the exact line
 **Output style — this is an official academic document:**
 - **No emoji, no pictographs, no colored-circle markers.** Plain text only.
 - Mark severity with **textual bracketed tags** consistently: `[Critical]`,
-  `[Major]`, `[Minor]`; strengths with `[Strength]`; the per-essay part checklist
+  `[Major]`, `[Minor]`; the per-essay part checklist
   with `[Present]` / `[Missing]`.
 - Formal, objective, third-person register; cite a concrete location for every
   claim.
+- **Findings only — no praise, no summaries.** Never compliment strong points
+  and never summarize or paraphrase the thesis's content; each header carries
+  only its problems, suggested fixes, and required additions. A section with no
+  issues gets the single line `No issues found.`
 
 **Review depth — line-level, six dimensions:**
 Each section is reviewed in depth across six dimensions (Academic, Logical flow,
@@ -74,7 +78,6 @@ Format A: state Ch4/5 are unwritten and itemize what they must contain.)*
 ---
 
 ## Overall Assessment & Priority Actions
-- Top 3–5 strengths.
 - Top 3–5 priority revisions, ranked by impact on doctoral defensibility.
 
 ---
