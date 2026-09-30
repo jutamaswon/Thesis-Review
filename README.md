@@ -60,6 +60,8 @@ Thesis-Review/
 ## ข้อกำหนด (Requirements)
 
 - AI agent ที่รองรับ "skill" ในรูปแบบโฟลเดอร์ที่มีไฟล์ `SKILL.md` เช่น **ZCode**, **Claude Code**
+  (หากใช้ **ChatGPT** ซึ่งไม่มีระบบสกิลแบบโฟลเดอร์ ดูวิธีใช้แบบ "ชุดคำสั่ง + ไฟล์อ้างอิง"
+  ในหัวข้อ [ใช้กับ ChatGPT](#ใช้กับ-chatgpt-เว็บ-chatgptcom) ด้านล่าง)
 - **Python 3.8 ขึ้นไป** (สคริปต์ใช้เฉพาะไลบรารีมาตรฐาน ไม่ต้องติดตั้งแพ็กเกจเพิ่ม)
 - แนะนำให้เลือกโมเดลระดับ **deep/reasoning** สำหรับการรีวิวเต็มรูปแบบ
   (เลือกโมเดลได้ในตัว AI agent เอง เช่น `/model` — สกิลนี้ไม่ต้องตั้งค่าคีย์ใด ๆ)
@@ -110,6 +112,76 @@ git clone https://github.com/jutamaswon/Thesis-Review.git ~/.claude/skills/Thesi
 
 - **ZCode:** ดูที่ **Settings → Skills** หรือพิมพ์ `/` ในช่องคำสั่ง จะพบชื่อสกิล `dba-thesis-review`
 - **Claude Code:** สกิลจะปรากฏในรายการสกิลของโปรเจกต์/ผู้ใช้โดยอัตโนมัติ
+
+---
+
+## ใช้กับ ChatGPT (เว็บ chatgpt.com)
+
+ChatGPT ไม่มีระบบ "skill" แบบโฟลเดอร์ `SKILL.md` เหมือน ZCode หรือ Claude Code
+แต่นำสกิลนี้ไปใช้ได้ในรูปแบบ **"ชุดคำสั่ง + ไฟล์อ้างอิง"** ผ่าน **Project** (ใช้ได้ทุกแพ็กเกจ)
+หรือ **Custom GPT** (แพ็กเกจ Plus/Pro) ดังนี้:
+
+1. **เตรียมไฟล์จาก repository นี้ 5 ไฟล์:**
+   `SKILL.md`, `reference/rubric.md`, `reference/report-template.md`,
+   `scripts/segment.py` และ `scripts/page_map.py`
+   (กดที่ไฟล์ในหน้า GitHub แล้วเลือก **Download raw file** ทีละไฟล์ หรือ Download ZIP ทั้ง repo)
+
+2. **สร้าง Project ใหม่** ใน ChatGPT (Sidebar → Projects → New project) ตั้งชื่อเช่น `Thesis Review`
+   หรือหากมีแพ็กเกจ Plus/Pro สามารถสร้าง **Custom GPT** แทนได้
+
+3. **อัปโหลดไฟล์ทั้ง 5** เข้าไปที่ **Project files** (หรือ **Knowledge** ของ Custom GPT)
+
+4. **วางคำสั่งนี้** ในช่อง **Instructions** ของ Project (หรือ Custom GPT):
+
+   ```text
+   You are an elite Academic Advisor and Senior Thesis Reviewer for a DBA program.
+   Follow the uploaded SKILL.md exactly: run the 8-step review in strict order,
+   review every section across the six dimensions (Academic, Logical flow,
+   Wording, Thai usage, Phrasing, Formatting/citation), cite the exact PDF page
+   for every issue, and end with the Detailed Corrections Log appendix.
+   Ask for the thesis file if none has been provided.
+   ```
+
+5. **แนบไฟล์วิทยานิพนธ์** (`.pdf` หรือ `.docx`) แล้วสั่ง เช่น
+   `Review my thesis following SKILL.md`
+
+6. **ขอรายงานผล:** ให้เขียนรายงานฉบับ Markdown ก่อน จากนั้นขอไฟล์ Word ต่อ
+   (เช่น "สร้างไฟล์ .docx จากรายงานนี้ตามรูปแบบใน SKILL.md") — ChatGPT ใช้เครื่องมือ
+   Python สร้างไฟล์ให้ดาวน์โหลดได้
+
+### ข้อควรทราบเมื่อใช้กับ ChatGPT
+
+- **วิทยานิพนธ์ยาวมากอาจอ่านไม่ครบในครั้งเดียว** — แนะนำแบ่งรีวิวทีละบท
+  (สั่งต่อเนื่องหลายรอบใน Project เดียวกัน) แล้วขอให้รวมเป็นรายงานเดียวตอนจบ
+- สคริปต์ `segment.py` และ `page_map.py` ให้ ChatGPT รันผ่านเครื่องมือวิเคราะห์ข้อมูล
+  (Code Interpreter) ได้ โดยแนบไฟล์ข้อความของวิทยานิพนธ์ (`.txt`) ที่สกัดแล้วเข้าไปด้วย
+- คุณภาพการรีวิวขึ้นกับโมเดลที่เลือก — แนะนำโมเดลที่เหมาะกับงานเอกสารยาว/ให้เหตุผลสูง
+  และควรตรวจทานหมายเลขหน้าที่อ้างอิงกับไฟล์ต้นฉบับก่อนใช้งานจริง
+
+---
+
+## ใช้งานบนเดสก์ท็อป (ติดตั้งด้วยเมาส์ ไม่ต้องใช้ command line)
+
+หากไม่ถนัดพิมพ์คำสั่ง สามารถติดตั้งสกิลนี้ด้วย File Explorer ล้วน ๆ ได้:
+
+1. **ดาวน์โหลด:** ที่หน้า GitHub กดปุ่ม **Code → Download ZIP** แล้วแตกไฟล์
+   (จะได้โฟลเดอร์ `Thesis-Review-main` — แนะนำเปลี่ยนชื่อเหลือ `Thesis-Review`)
+
+2. **คัดลอกโฟลเดอร์** ไปวางที่ไดเรกทอรีสกิลของโปรแกรม (สร้างโฟลเดอร์ `skills` เองได้หากยังไม่มี):
+
+   | ระบบ | ตำแหน่งที่วาง |
+   |---|---|
+   | Windows | `C:\Users\<ชื่อผู้ใช้>\.zcode\skills\Thesis-Review` |
+   | macOS | `/Users/<ชื่อผู้ใช้>/.zcode/skills/Thesis-Review` (โฟลเดอร์ซ่อน — กด `Cmd+Shift+.` ใน Finder เพื่อแสดง) |
+
+3. **ตรวจสอบ:** เปิดโปรแกรม **ZCode Desktop** ขึ้นใหม่ แล้วไปที่ **Settings → Skills**
+   (หรือพิมพ์ `/` ในช่องคำสั่ง) จะต้องพบชื่อสกิล `dba-thesis-review`
+
+4. **เริ่มใช้งาน:** สร้างโฟลเดอร์ทำงานสำหรับวิทยานิพนธ์แต่ละเรื่อง วางไฟล์ `.pdf`/`.docx`
+   แล้วเปิดโฟลเดอร์นั้นในโปรแกรม แล้วสั่งรีวิวตามขั้นตอนพื้นฐานด้านล่าง
+
+> ผู้ใช้ **Claude** บนเดสก์ท็อป/เว็บ (แพ็กเกจ Pro/Max) สามารถเพิ่มสกิลลง Project
+> ผ่าน **Capabilities → Skills** ได้เช่นกัน โดยอัปโหลดโฟลเดอร์ `Thesis-Review` นี้เป็นไฟล์ ZIP
 
 ---
 
